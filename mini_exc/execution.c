@@ -6,7 +6,7 @@
 /*   By: hoel-mos <hoel-mos@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/14 18:31:33 by hoel-mos          #+#    #+#             */
-/*   Updated: 2025/05/10 20:27:40 by hoel-mos         ###   ########.fr       */
+/*   Updated: 2025/05/13 22:11:29 by hoel-mos         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,29 @@ void	ft_ceue(t_data *data, t_env *env)
 		ft_pwd();
 }
 
-// ###########################################################################
+void	cmd_hand(t_data *cmd, t_env *env)
+{
+	t_data *tmp;
+	int	check;
+
+	tmp = cmd;
+	while (tmp)
+	{
+		if (cmd->files.infile || cmd->files.outfile)
+			redirect(cmd);
+		offs()->prev_fds[0] = -1;
+		offs()->prev_fds[1] = -1;
+		check = builtin_check(tmp->cmd[0]);
+		if (check == 1)
+			ft_ceue(tmp, env);
+		else
+			execute_pipeline(tmp, env);
+		tmp = tmp->next;
+	}
+}
+//######################################################################
+//######################################################################
+
 static char	*get_key(const char *env_str)
 {
 	size_t	len = 0;
@@ -108,42 +130,8 @@ t_env	*env_to_list(char **envp)
 	}
 	return (head);
 }
-// ###########################################################################
-
-void	cmd_hand(t_data *cmd, t_env *env)
-{
-	int (check), (out_backup), (in_backup), (prev_fds[2]);
-	prev_fds[0] = -1;
-	prev_fds[1] = -1;
-	out_backup = dup(STDOUT_FILENO); // stdout back up
-	in_backup = dup(STDIN_FILENO);// stdin back up
-	while (cmd)
-	{
-		cmd->fds[0] = -1;
-		cmd->fds[1] = -1;
-		if (cmd->files.infile || cmd->files.outfile)
-		{
-			redirect(cmd);
-			cmd->redirect_check = true;
-		}
-		check = builtin_check(cmd->cmd[0]);
-		if (check == 1)
-			ft_ceue(cmd, env);
-		else
-			execute_pipeline(cmd, env, prev_fds);
-		if (cmd->redirect_check)
-		{
-			dup2(out_backup, STDOUT_FILENO);
-			dup2(in_backup, STDIN_FILENO);
-			close(cmd->redirected_fd);
-			cmd->redirect_check = false;
-		}
-		cmd = cmd->next;
-	}
-	close(out_backup);
-	close(in_backup);
-}
-
+//######################################################################
+//######################################################################
 
 void execute_commands(t_data *cmd, char **ev) //beggining
 {
@@ -158,6 +146,3 @@ void execute_commands(t_data *cmd, char **ev) //beggining
 	cmd_hand(cmd, env);
 	//reset
 }
-
-// note
-// check wach tqder t pipi mn be3d ma redirecti

@@ -6,7 +6,7 @@
 /*   By: hoel-mos <hoel-mos@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/16 08:53:04 by mel-mouh          #+#    #+#             */
-/*   Updated: 2025/05/10 18:30:57 by hoel-mos         ###   ########.fr       */
+/*   Updated: 2025/05/13 22:10:23 by hoel-mos         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,17 +68,20 @@ typedef struct s_files
     int		*o_type;
 }	t_files;
 
+typedef struct s_offs
+{
+	int				prev_fds[2];
+	int 			curr_fds[2];
+	char			oldpwd[1024];
+	char			pwd[1024];
+	int				redirected_fd;
+}	t_offs;
+
 
 typedef struct s_data
 {
 	int				status; // check if needed
-	int				redirected_fd;
-	bool			redirect_check;
-	int				fds[2];
-	char			oldpwd[1024];
-	char			pwd[1024];
     char			**cmd;
-    char			**data;
     t_files			files;
 	t_export		*export_data;
 	struct s_data	*next;
@@ -90,45 +93,11 @@ typedef struct s_env {
 	struct s_env   *next;       // Pointer to next node
 }	t_env;
 
-// typedef struct s_cmd
-// {
-// 	t_cd 		*cd_data;
-// 	t_echo		*echo_data;
-// 	t_export 	*export_data;
-// 	bool		eflag_check;
-// 	int			code;
-//     char        *cmd;       // Command name (e.g., "ls", "echo")
-//     char        **cmd_flag;
-// 	char		*var;
-// 	char		*value;  // Arguments (e.g., "-la", "hello")
-// 	int         infd;       // Input file descriptor (default: STDIN_FILENO)
-//     int         outfd;      // Output file descriptor (default: STDOUT_FILENO)
-//     struct s_cmd *next;     // Next command in pipeline/list
-// } t_cmd;
-
-
-
-// typedef struct s_var // maight delete later(j cole hhhhh)
-// {
-// 	int prev_pipe[2];
-//     int next_pipe[2];		
-// 	pid_t pid;
-// 	int pip_n;
-// 	char *cmd_path;
-// 	char	*path;
-// 	char	*path_copy;
-// 	char	**dir;
-// 	char    **cmd_buff;
-// 	char	*full_path;
-// 	int		index;
-// 	int		status;
-// }	t_var;
-
 
 //------- functions after restructuring----
 int		builtin_check(char *cmd);
 void 	execute_commands(t_data *data, char **env);
-void	execute_pipeline(t_data *cmd_list, t_env *env, int *prev);
+void	execute_pipeline(t_data *cmd, t_env *env);
 char 	*ft_free_array(char **arr);
 int 	count_words(char *flags);
 int 	envcount(t_env *current);
@@ -139,6 +108,8 @@ char	*get_path(char *cmd);
 void 	err(char *str);
 void	redirect(t_data *cmd);
 char 	*word(char *str);
+t_offs	*offs(void);
+
 
 // ######### BUILTINs ###############################################
 void	ft_cd(t_data *data, t_env *env);

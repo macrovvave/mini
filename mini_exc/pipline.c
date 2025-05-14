@@ -1,53 +1,64 @@
 #include <../includes/minishell.h>
 
-void	close_pipe(int *fds)
+//#############
+//
+//fds = [0][1] : [0] to read frpm | [1] to write into
+//
+//#############
+
+void close_fds(int *fds, int check)
 {
 	if (fds[0] != -1)
 		close(fds[0]);
 	if (fds[1] != -1)
 		close(fds[1]);
+	if(check)
+	{
+		// fds[0] = -1;
+		// fds[1] = -1;
+	}
 }
 
-void	child_proc(t_data *cmd, int *prev, int *curr, t_env *env) //new
+void	child_proc(t_data *cmd, t_env *env) //new
 {
-	if (prev[0] != -1)
-		dup2(prev[0], STDIN_FILENO);
+	
+	if (offs()->prev_fds[0] != -1)
+	{
+		dup2(offs()->prev_fds[0], STDIN_FILENO);
+		close_fds(offs()->prev_fds, 0);
+	}
 	if (cmd->next)
-		dup2(curr[1], STDOUT_FILENO);
-	close_pipe(prev);
-	close_pipe(curr);
+	{
+		dup2(offs()->curr_fds[1], STDOUT_FILENO);
+		close_fds(offs()->curr_fds, 0);
+	}
 	execve(get_path(cmd->cmd[0]), cmd->cmd, env_to_array(env));
 	err("execve");
 }
 
-void	parent_proc(int *prev, int *curr, t_data *next_cmd) // new
-{
-	close_pipe(prev);
-
-	if (next_cmd)
-	{
-		prev[0] = curr[0];
-		prev[1] = curr[1];
-		close(curr[1]);
-	}
-	else
-		close_pipe(curr);
-}
-
-void	execute_pipeline(t_data *cmd, t_env *env, int *prev)
+void	execute_pipeline(t_data *cmd, t_env *env)
 {
 	pid_t	pid;
 
-	if (cmd->next && pipe(cmd->fds) == -1)
+	if (cmd->next && pipe(offs()->curr_fds) == -1)
 		err("pipe");
 	pid = fork();
 	if (pid == -1)
 		err("fork");
-	if (pid == 0)
-		child_proc(cmd, prev, cmd->fds, env);
+	else if (pid == 0)
+		child_proc(cmd, env);
 	else
 	{
 		waitpid(pid, &cmd->status, 0);
-		parent_proc(prev, cmd->fds, cmd->next);
+		close_fds(offs()->prev_fds, 1);
+		if (cmd->next)
+		{
+			offs()->prev_fds[0] = offs()->curr_fds[0];
+			offs()->prev_fds[1] = offs()->curr_fds[1];
+			offs()->curr_fds[0] = -1;
+			offs()->curr_fds[1] = -1;
+		}
+		// else
+			// close_fds(offs()->curr_fds, 1);
 	}
 }

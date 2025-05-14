@@ -29,6 +29,13 @@
 //     exit(1);
 // }
 
+t_offs *offs(void)
+{
+	static t_offs x;
+
+	return (&x);
+}
+
 void	sort_tenv(char **env)
 {
 	char	*tmp;
@@ -56,33 +63,35 @@ void	odup(char *file, int type, int is_input, int *fd)
 {
 	if (*fd != -1)
 		close(*fd);
-
 	if (is_input)
 		*fd = open(file, O_RDONLY);
 	else if (type == 2)
 		*fd = open(file, O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	else
 		*fd = open(file, O_CREAT | O_WRONLY | O_APPEND, 0644);
-
 	if (*fd == -1)
 		perror("open");
-
-	dup2(*fd, is_input ? STDIN_FILENO : STDOUT_FILENO);
+	if(is_input)
+		dup2(*fd, STDIN_FILENO);
+	else 
+		dup2(*fd, STDOUT_FILENO);
 }
 
 void	redirect(t_data *cmd)
 {
-	int	index = 0;
+	int	index;
 
-	cmd->redirected_fd = -1;
-
+	index = 0;
+	offs()->redirected_fd = -1;
 	while (cmd->files.infile && cmd->files.infile[index])
-		odup(cmd->files.infile[index++], 0, 1, &cmd->redirected_fd);
-
+	{
+		odup(cmd->files.infile[index], 0, 1, &offs()->redirected_fd);
+		index++;
+	}
 	index = 0;
 	while (cmd->files.outfile && cmd->files.outfile[index])
 	{
-		odup(cmd->files.outfile[index], cmd->files.o_type[index], 0, &cmd->redirected_fd);
+		odup(cmd->files.outfile[index], cmd->files.o_type[index], 0, &offs()->redirected_fd);
 		index++;
 	}
 }
